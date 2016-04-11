@@ -1,0 +1,86 @@
+logcheck-database (1.3.0) unstable; urgency=low
+
+  logcheck-database dropped violations.d/logcheck a while ago because it was
+  causing too many false positives and required insane amounts of rule
+  duplication. As a result, unless packages themselves elevate their log
+  messages (and provide their own filters), logcheck now uses only the
+  ignore.d.* layer by default.
+
+  If you prefer to continue use of violations.d/logcheck, then repopulate the
+  file; the violations.ignore.d/logcheck-* filter files are still being
+  distributed (but no longer maintained). They will be dropped in a future
+  release.
+
+  If you don't like this, please work with the package maintainers of the
+  packages responsible for messages that are elevated to security events
+  (violations) and ask them to provide package-specific elevation filters in
+  violations.d/<packagename> and appropriate ignore filters in
+  violations.ignore.d/<packagename>.
+
+ -- martin f. krafft <madduck@debian.org>  Fri, 18 Jul 2008 15:38:40 +0200
+
+logcheck-database (1.2.49) unstable; urgency=low
+
+  logcheck-database now filters all SMART attribute changes reported by
+  smartd, except for temperature changes (attribute 194) if the target value
+  is greater than or equal to 55, which will be reported as security events
+  (violations.d), and changes to the following four attributes, which will be
+  reported as security alerts (cracking.d):
+
+        Reallocated_Sector_Ct
+        Current_Pending_Sector  (when > 0 only)
+        Offline_Uncorrectable   (when > 0 only)
+        UDMA_CRC_Error_Count
+
+  This decision was made based on several arguments, which have been brought
+  up as part of a mailing list discussion [0]. Among these were:
+
+  1. smartd can send warning mails and is configured to do so by default on
+     Debian.
+
+  2. attribute values are not standardised, so it is not possible to sensibly
+     filter out truly informational messages which are of no interest to the
+     administrator.
+
+  3. logcheck does not have any context information and can thus not filter
+     attributes whose values simply oscillate.
+
+  [0] http://marc.theaimsgroup.com/?t=116015459000003&r=1&w=2
+
+  Unfortunately, some harddrives manufactures in the USA use the Fahrenheit
+  scale for the temperature values (braindeadedness!), so these will generate
+  spurious security events which you will have to filter out by uncommenting
+  the appropriate line in /etc/logcheck/violations.ignore.d/logcheck-smartd.
+
+ -- martin f. krafft <madduck@debian.org>  Wed, 18 Oct 2006 19:57:18 +0200
+
+logcheck-database (1.1.1-8) unstable; urgency=low
+
+  [This message was previously issued with debconf and has now been moved to
+  a NEWS file (where it should be). If you are seeing this again, do note that
+  it applies to an ancient version and you probably know all this already.]
+
+  From version 1.1.1-8, logcheck supports run-parts controled rule
+  directories:
+
+  - /etc/logcheck/cracking.d
+  - /etc/logcheck/cracking.ignore.d [for local use only]
+  - /etc/logcheck/violations.d
+  - /etc/logcheck/violations.ignore.d
+  - /etc/logcheck/ignore.d.workstation
+  - /etc/logcheck/ignore.d.server
+  - /etc/logcheck/ignore.d.paranoid
+
+  The ignore.d.{workstation,server,paranoid} directory to be used is set by
+  the REPORTLEVEL option in the file "/etc/logcheck/logcheck.conf".
+
+  These directories may contain files prefixed with "logcheck-" (containing
+  generic alert/override patterns), named "(packagename)" (containing patterns
+  specific to that one package), or named "local" respectively prefixed with
+  "local-" (created by the local administrator to contain patterns tailored
+  for a particular site).  Logcheck will then use rules collected from all the
+  files found in the appropriate directories.
+
+  Please see /usr/share/doc/logcheck for more details.
+
+ -- martin f. krafft <madduck@debian.org>  Sat,  8 Jul 2006 16:00:09 +0200

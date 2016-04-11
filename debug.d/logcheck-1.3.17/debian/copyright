@@ -1,0 +1,37 @@
+This package is a native Debian package.  It is currently maintained
+by the Debian Logcheck team <logcheck-devel@lists.alioth.debian.org>
+consisting of:
+
+	Todd Troxell <ttroxell@debian.org>
+	Maximilian Attems <max@nl.linux.org>
+	Gerfried Fuchs <rhonda@debian.org>
+	Eric Evans <eevans@sym-link.com>
+	Jamie Penman-Smithson <jamie@silverdream.org>
+	martin f. krafft <madduck@debian.org>
+	Marc Haber <mh+debian-packages@zugschlus.de>
+	Hanspeter Kunz <hkunz@ifi.uzh.ch>
+	Hannes von Haugwitz <hannes@vonhaugwitz.com>
+	Jeremy L. Gaddis <jlgaddis@gnu.org>
+
+The project is currently hosted on Alioth at:
+http://alioth.debian.org/projects/logcheck/
+
+Please read the following mails and subsequent threads:
+http:///lists.debian.org/debian-devel/2001/debian-devel-200102/msg01235.html
+and
+http://lists.debian.org/debian-devel/2001/debian-devel-200111/msg01573.html
+as well as the 'CHANGES' file.
+
+Copyright:
+
+ Copyright (C) 2004-2014 Debian Logcheck Team
+                         <logcheck-devel@lists.alioth.debian.org>
+ Copyright (C) 2003      Steve Kemp <skx@debian.org>
+ Copyright (C) 2002,2003 Jonathan Middleton <jjm@ixtab.org.uk>
+ Copyright (C) 1999-2002 Rene Mayrhofer <rmayr@debian.org>
+ Copyright (C) 1996-1997 Craig H. Rowland <crowland@psionic.com>
+
+This software is published under the terms of the GNU general public license,
+version 2 (not later).
+On Debian systems, a copy of the license can normally be found under
+/usr/share/common-licenses/GPL-2.

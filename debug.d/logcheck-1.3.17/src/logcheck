@@ -1,0 +1,787 @@
+#!/usr/bin/env bash
+#
+# Copyright (C) 2004-2012,2014 Debian Logcheck Team
+#                              <logcheck-devel@alioth.lists.debian.org>
+# Copyright (C) 2002,2003      Jonathan Middleton <jjm@ixtab.org.uk>
+# Copyright (C) 1999-2002      Rene Mayrhofer <rmayr@debian.org>
+# Copyright (C) 1996-1997      Craig Rowland <crowland@psionic.com>
+
+# This file is part of Logcheck
+
+# Logcheck is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+
+# Logcheck is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with Logcheck; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+if [ `id -u` = 0 ]; then
+    echo "logcheck should not be run as root. Use su to invoke logcheck:"
+    echo "su -s /bin/bash -c \"/usr/sbin/logcheck${@:+ $@}\" logcheck"
+    echo "Or use sudo: sudo -u logcheck logcheck${@:+ $@}."
+    # you may want to uncomment that hack to let logcheck invoke itself.
+    # su -s /bin/bash -c "$0 $*" logcheck
+    exit 1
+fi
+
+if [ ! -f /usr/bin/lockfile-create -o \
+     ! -f /usr/bin/lockfile-remove -o \
+     ! -f /usr/bin/lockfile-touch ]; then
+    echo "fatal: lockfile-progs is a prerequisite for logcheck, and was not found."
+    exit 1
+fi
+
+# Set the umask
+umask 077
+
+# Set the flag variables
+SYSTEM=0
+SECURITY=0
+ATTACK=0
+
+# Set the getopts string
+GETOPTS="c:dhH:l:L:m:opr:RsS:tTuvw"
+
+# Get the details for the email message
+DATE="$(date +'%Y-%m-%d %H:%M %z')"
+VERSION="1.3.17"
+
+# Set the default report level
+REPORTLEVEL="server"
+
+# default to sent mails to local root
+SENDMAILTO="root"
+
+# by default, append a header
+MIMECONSTRUCTARGS="--header 'Auto-Submitted: auto-generated'"
+
+# Set the default subject lines
+ATTACKSUBJECT="Security Alerts"
+SECURITYSUBJECT="Security Events"
+EVENTSSUBJECT="System Events"
+ADDTAG="no"
+
+# Set the default paths
+RULEDIR="/etc/logcheck"
+CONFFILE="/etc/logcheck/logcheck.conf"
+STATEDIR="/var/lib/logcheck"
+LOGFILES_LIST="/etc/logcheck/logcheck.logfiles"
+LOGFILE_FALLBACK="/var/log/syslog"
+LOGTAIL="/usr/sbin/logtail2"
+CAT="/bin/cat"
+SYSLOG_SUMMARY="/usr/bin/syslog-summary"
+
+# Set the options defaults
+INTRO=1
+LOGCHECKDEBUG=0
+MAILOUT=0
+MAILASATTACH=0
+NOCLEANUP=0
+REBOOT=0
+FQDN=0
+SORTUNIQ=0
+SUPPORT_CRACKING_IGNORE=0
+SYSLOGSUMMARY=0
+LOCKDIR=/run/lock/logcheck
+LOCKFILE="$LOCKDIR/logcheck"
+
+# Carry out the clean up tasks
+cleanup() {
+
+    if [ -n "$LOCK" ]; then
+        debug "cleanup: Killing lockfile-touch - $LOCK"
+	kill "$LOCK" && unset LOCK
+    fi
+
+    if [ -f "$LOCKFILE.lock" ]; then
+        debug "cleanup: Removing lockfile: $LOCKFILE.lock"
+	lockfile-remove "$LOCKFILE"
+    fi
+
+    if [ -d "$TMPDIR" ]; then
+        # Remove the tmp directory
+        if [ "$NOCLEANUP" -eq 0 ];then
+	    cd $STATEDIR
+	    debug "cleanup: Removing - $TMPDIR"
+	    rm -r "$TMPDIR"
+        else
+	    debug "cleanup: Not removing - $TMPDIR"
+        fi
+    fi
+}
+
+# Log debug output to standard error
+debug() {
+	if [ "$LOGCHECKDEBUG" -eq 1 ]; then
+		echo "D: [$(date +%s)] $1" >&2
+	fi
+}
+
+# Add warning
+warn () {
+	message="$1"
+	debug "Warning - $message"
+
+	if [ -d "$TMPDIR" ]; then
+		echo "$message" >> "$TMPDIR/warnings" \
+		  || error "Could not append to $TMPDIR/warnings."
+	fi
+	echo
+	return 0
+}
+
+# Mail error message to sysadmin
+error() {
+    message="$1"
+
+    if [ "$2" = "noclean" ]; then
+	debug "error: Not removing lockfile"
+    else
+        if [ -n "$LOCK" ]; then
+	    debug "error: Killing lockfile-touch - $LOCK"
+	    kill "$LOCK" && unset LOCK
+	fi
+
+       if [ -f "$LOCKFILE.lock" ]; then
+           debug "error: Removing lockfile: $LOCKFILE.lock"
+           lockfile-remove "$LOCKFILE"
+       fi
+
+    fi
+
+    debug "Error: $message"
+
+    if [ "$MAILOUT" -eq 0 ]; then
+	{
+	    cat<<EOF
+Warning: If you are seeing this message, your log files may not have been
+checked!
+
+Details:
+$message
+
+${TMPDIR:+Check temporary directory: $TMPDIR
+}
+Also verify that the logcheck user can read all files referenced in
+/etc/logcheck/logcheck.logfiles!
+
+$(export)
+EOF
+	} | eval mime-construct $MIMECONSTRUCTARGS \
+	    --subject "'Logcheck: $HOSTNAME $DATE exiting due to errors'" --encoding "7bit" \
+        --file - --to "$SENDMAILTO"
+
+    elif [ "$MAILOUT" -eq 1 ]; then
+          {
+	      echo "Error: $message."
+	  }
+    fi
+    exit 1
+}
+
+# Add an identification line at the beginning of the sent mail
+setintro() {
+    if [ -f "$RULEDIR/header.txt" -a -r "$RULEDIR/header.txt" ] ; then
+       $CAT "$RULEDIR/header.txt" >> "$TMPDIR/report" \
+           || error "Could not append header to $TMPDIR/report."
+    fi
+}
+
+
+# Add a footer to the report.
+setfooter() {
+    if [ -f "$RULEDIR/footer.txt" -a -r "$RULEDIR/footer.txt" ] ; then
+       $CAT "$RULEDIR/footer.txt" >> "$TMPDIR/report" \
+           || error "Could not append footer to $TMPDIR/report."
+    fi
+}
+
+
+# Clean a directory (or single file) to a cleaned tmp version
+# takes two args: directory and cleaned file
+cleanrules() {
+    dir="$1"
+    cleaned="$2"
+
+    if [ -d "$dir" ]; then
+        if [ ! -d "$cleaned" ]; then
+	    mkdir "$cleaned" \
+	        || error "Could not make dir $cleaned for cleaned rulefiles."
+	fi
+	for rulefile in $(run-parts --list "$dir"); do
+	    rulefile="$(basename "$rulefile")"
+	    if [ -f "${dir}/${rulefile}" ]; then
+		debug "cleanrules: ${dir}/${rulefile}"
+		if [ -r "${dir}/${rulefile}" ]; then
+			# pipe to cat on greps to get usable exit status
+			egrep --text -v '^[[:space:]]*$|^#' "$dir/$rulefile" | cat \
+				>> "$cleaned/$rulefile" \
+			|| error "Couldn't append to $cleaned/$rulefile."
+		else
+			error "Couldn't read $dir/$rulefile"
+		fi
+	    fi
+	done
+    elif [ -f "$dir" ]; then
+	error "cleanrules: '$dir' is a file, not a directory"
+    elif [ -z "$dir" ]; then
+	error "cleanrules: called without argument"
+    fi
+}
+
+# Add any events to the report
+report() {
+    if [ -s "$TMPDIR/checked" ]; then
+	printheader "$*" >> "$TMPDIR/report" \
+	    || error "Could not append to report."
+	if [ "$SYSLOGSUMMARY" -eq 1 ] && [ -x "$SYSLOG_SUMMARY" ]; then
+	    debug "report: running syslog-summary - $*"
+	    $SYSLOG_SUMMARY "$TMPDIR/checked" | \
+		egrep -v "^Summarizing " | cat >> "$TMPDIR/report" \
+		    || error "Could not append to report."
+	else
+	    if [ "$SYSLOGSUMMARY" -eq 1 ] && [ ! -x "$SYSLOG_SUMMARY" ]; then
+		debug "report : WARNING : can't exec $SYSLOG_SUMMARY. Running without summary"
+	    fi
+	    debug "report: cat'ing - $*"
+	    cat "$TMPDIR/checked" >> "$TMPDIR/report" \
+	        || error "Could not append to report."
+	fi
+	echo >> "$TMPDIR/report" \
+	    || error "Could not append to report."
+	return 0
+    else
+	return 1
+    fi
+}
+
+# Add eventual section titles to the report
+printheader() {
+    char="="
+    header="$1"
+    number="$(echo "$header" | wc -c)"
+    num=1
+    line=""
+
+    while [ "$num" -lt "$number" ]; do
+        line="${line}${char}"
+        if [ "$char" = "=" ]; then
+            char="-"
+        else
+            char="="
+        fi
+        num=$(($num + 1))
+    done
+    echo "$header"
+    echo "$line"
+}
+
+# Mail the report
+sendreport() {
+    if [ "$REBOOT" -eq 1 ]; then
+	subject="Reboot: $HOSTNAME $DATE $*"
+    else
+	subject="$HOSTNAME $DATE $*"
+    fi
+    if [ "$ADDTAG" = "yes" ]; then
+        subject="[logcheck] $subject"
+    fi
+
+    if [ "$MAILOUT" -eq 1 ]; then
+	debug "Sending report to STDOUT"
+	cat "$TMPDIR/report"
+	debug "Sent report to STDOUT"
+    else
+	debug "Sending report: '$subject' to $SENDMAILTO"
+        if [ "$MAILASATTACH" -eq 1 ]; then
+          debug "Sending report as attachment"
+          eval mime-construct $MIMECONSTRUCTARGS --subject "'$subject'" --encoding "7bit" --string "'Report attached'" --to "$SENDMAILTO" --attachment "logcheck_report" --encoding "7bit" --file "$TMPDIR/report"
+          return $?
+        elif [ "$MAILASATTACH" -eq 2 ]; then
+          debug "Sending report as gzip attachment"
+          eval mime-construct $MIMECONSTRUCTARGS --subject "'$subject'" --encoding "7bit" --string "'Report attached'" --to "$SENDMAILTO" --type "application/x-gzip" --attachment "logcheck_report.gz" --file "'gzip -c $TMPDIR/report |'"
+          return $?
+        fi
+        eval mime-construct $MIMECONSTRUCTARGS --subject "'$subject'" --to "$SENDMAILTO" --encoding "7bit" --file "$TMPDIR/report"
+    fi
+}
+
+# Clean the report to level for type
+greplogoutput() {
+    raise="$1"
+    sectionstring="$2"
+    ignore="$3"
+    ignorehigher="$4"
+
+    RETURN=1
+
+    for grepfile in $(ls -1 "$raise"); do
+	debug "greplogoutput: $grepfile"
+
+	# Raise entries that match
+	egrep --text -f "$raise/$grepfile" "$TMPDIR/logoutput-sorted" | cat \
+	    > "$TMPDIR/checked" \
+	    || error "Could not output to $TMPDIR/checked."
+
+	# apply different ignore rules
+	if [ -s "$TMPDIR/checked" ]; then
+	    debug "greplogoutput: Entries in checked"
+
+	    if [ -n "$ignore" -a -f "$ignore/$(basename "$grepfile")" ]; then
+		cleanchecked "$ignore/$(basename "$grepfile")"
+	    fi
+
+	    # quick and dirty fix for ignoring logcheck-foo files
+	    # in the case logcheck itself has no raised entry
+	    if [ -n "$ignore" -a -f "$ignore/logcheck-$(basename "$grepfile")" ]; then
+		cleanchecked "$ignore/logcheck-$(basename "$grepfile")"
+	    fi
+
+	    # If it's the logcheck file, we do something special
+	    if [ "$(basename "$grepfile")" = "logcheck" ]; then
+
+		# Now ignore all entries from the ignore dir
+		# old logcheck versions only ignored logcheck-<package> files
+		if [ -n "$ignore" ]; then
+		    debug "Applying Logcheck override files"
+		    for file in $(ls -1 "$ignore/") ; do
+		        debug "clean logcheck-<package>: $file"
+			cleanchecked "$ignore/$file"
+		    done
+		else
+		    debug "No Logcheck override files"
+		fi
+
+		debug "Cleaning logcheck"
+		# Remove any entries already reported
+		for file in $(ls "$raise/" | grep -v '^logcheck') ; do
+		    debug "Cleaning logcheck: $file"
+		    cleanchecked "$raise/$file"
+		done
+	    fi
+
+	    if [ -n "$ignorehigher" ]; then
+		if [ -d "$ignorehigher" -a -s "$TMPDIR/checked" ]; then
+		    cleanchecked "$ignorehigher"
+		fi
+	    fi
+
+	    # Apply local rules before we report
+	    if [ -n "$ignore" ]; then
+	        if [ -f "$ignore/local" -a -s "$TMPDIR/checked" ]; then
+		    cleanchecked "$ignore/local"
+	        fi
+
+	        # Now apply any local-* files
+	        for file in $(ls -1 "$ignore/" | grep '^local-') ; do
+		    cleanchecked "$ignore/$file"
+	        done
+	    fi
+
+	    if [ "$(basename "$grepfile")" = "logcheck" ]; then
+		report "${sectionstring}" && RETURN=0
+	    else
+		report "${sectionstring} for $(basename "$grepfile")" \
+		    && RETURN=0
+	    fi
+	fi
+    done
+    debug "greplogoutput: returning $RETURN"
+    return $RETURN
+}
+
+# Process a logfile snippet with egrep.
+cleanchecked() {
+    clean="$1"
+
+    if [ -f "$clean" ]; then
+	debug "cleanchecked - file: $clean"
+        egrep --text -v -f "$clean" "$TMPDIR/checked" | cat >> "$TMPDIR/checked.1"  \
+	    || error "Could not output to $TMPDIR/checked.1."
+	mv "$TMPDIR/checked.1" "$TMPDIR/checked" \
+	    || error "Could not move $TMPDIR/checked.1 to $TMPDIR/checked"
+    elif [ -d "$clean" ]; then
+	debug "cleanchecked - dir - $clean"
+	for file in $(ls -1 "$clean/"); do
+	debug "cleanchecked - dir - $clean/$file"
+	    egrep --text -v -f "$clean/$file" "$TMPDIR/checked" | cat \
+		>> "$TMPDIR/checked.1" \
+		    || error "Could not output to TMPDIR/checked.1."
+	    mv "$TMPDIR/checked.1" "$TMPDIR/checked" \
+	        || error "Could not move $TMPDIR/checked.1 to $TMPDIR/checked"
+	done
+    else
+	error "cleanchecked: Not a file or a directory $clean"
+    fi
+}
+
+# Get the yet unseen part of one logfile.
+logoutput() {
+    file="$1"
+
+    # There are some problems with this section.
+    debug "logoutput called with file: $file"
+    if [ -f "$file" ]; then
+	offsetfile="$STATEDIR/offset$(echo "$file" | tr / .)"
+	debug "Running $LOGTAIL on $file"
+	$LOGTAIL $LOGTAIL_OPTS -f "$file" -o "$offsetfile" \
+	    >> "$TMPDIR/logoutput/$(basename "$file")" 2>&1 \
+	    || error "Could not run logtail or save output"
+    else
+	echo "E: File could not be read: $file" >> "$TMPDIR/errors" \
+	    || error "Could not output to $TMPDIR/errors."
+    fi
+}
+
+# Show all the cli options to our users.
+usage() {
+    debug "usage: Printing usage and exiting"
+    cat<<EOF
+usage: logcheck [-c CFG] [-d] [-h] [-H HOST] [-l LOG] [-L CFG] [-m MAIL] [-o]
+                [-r DIR] [-s|-p|-w] [-R] [-S DIR] [-t] [-T] [-u]
+ -c CFG       = override default configuration file
+ -d           = debug mode
+ -h           = print this usage information and exit
+ -H HOST      = use this hostname in the subject of any generated mail
+ -l LOG       = check the specified logfile
+ -L CFG       = override default logfiles list
+ -m MAIL      = send the report to the specified recipient
+ -o           = send the report to stdout, no mail will be sent
+ -p           = use the "paranoid" runlevel
+ -r DIR       = override default rules directory
+ -R           = adds "Reboot:" to email subject
+ -s           = use the "server" runlevel
+ -S DIR       = override default state directory
+ -t           = testing mode, don't update the logfile offsets
+ -T           = do not remove the TMPDIR
+ -u           = enable syslog-summary
+ -v           = print version
+ -w           = use the "workstation" runlevel
+EOF
+}
+
+# Check the commandline options for a change to the config file option
+while getopts "$GETOPTS" opt; do
+    case "$opt" in
+	c)
+	    debug "Setting CONFFILE to $OPTARG"
+	    CONFFILE="$OPTARG"
+            if [ ! -r "$CONFFILE" ]; then
+                 error "Config file $CONFFILE unreadable or does not exists"
+            fi
+	    ;;
+	d)
+	    LOGCHECKDEBUG=1
+	    debug "Turning debug mode on"
+	    ;;
+	h)
+	    usage
+	    exit 0
+	    ;;
+	T)
+	    debug "Setting NOCLEANUP to 1"
+	    NOCLEANUP=1
+	    ;;
+	v)
+	    echo "logcheck $VERSION"
+	    exit 0
+	    ;;
+	\?)
+	    usage
+	    exit 1
+	    ;;
+    esac
+done
+
+# Now reset $OPTIND to 1
+OPTIND=1
+
+debug "Sourcing - $CONFFILE"
+
+# Now source the config file - before things that should not be changed
+if [ -r "$CONFFILE" ]; then
+	. "$CONFFILE"
+elif [ -f "$CONFFILE" ]; then
+	error  "Config file $CONFFILE could not be read"
+fi
+
+# Setup the compatibility for the old style of setting $INTRO
+# And handle it being set to ""
+if [ -z "$INTRO" ]; then
+	INTRO=1
+else
+    if [ "$INTRO" = "no" ]; then
+	INTRO=0
+    elif [ "$INTRO" = "yes" ]; then
+	INTRO=1
+    fi
+fi
+
+# Use sort -u or -k 1,3 -s
+if [ "$SORTUNIQ" -eq 1 ];then
+    SORT="sort -u"
+else
+    SORT="sort -k 1,3 -s"
+fi
+
+# Hostname either fully qualified or not.
+if [ "$FQDN" -eq 1 ]; then
+        HOSTNAME="$(hostname --fqdn 2>/dev/null)"
+else
+        HOSTNAME="$(hostname --short 2>/dev/null)"
+fi
+
+# Now check for the other options
+while getopts "$GETOPTS" opt; do
+    case "$opt" in
+	H)
+	   debug "Setting HOSTNAME to $OPTARG"
+	   HOSTNAME="$OPTARG"
+	   ;;
+	l)
+	    debug "Setting LOGFILE to $OPTARG"
+	    LOGFILE="$OPTARG"
+	    ;;
+	L)
+	    debug "Setting LOGFILES_LIST to $OPTARG"
+	    LOGFILES_LIST="$OPTARG"
+	    ;;
+	m)
+	    debug "Setting SENDMAILTO to $OPTARG"
+	    SENDMAILTO="$OPTARG"
+	    ;;
+	o)
+	    debug "Setting MAILOUT to 1"
+	    MAILOUT="1"
+	    ;;
+	p)
+	    debug "Setting REPORTLEVEL to paranoid"
+	    REPORTLEVEL="paranoid"
+	    ;;
+	r)
+	    debug "Setting RULEDIR to $OPTARG"
+	    RULEDIR="$OPTARG"
+	    ;;
+	R)
+	    debug "Setting REBOOT to 1"
+	    REBOOT=1
+	    ;;
+	s)
+	    debug "Setting REPORTLEVEL to server"
+	    REPORTLEVEL="server"
+	    ;;
+	S)
+	    debug "Setting STATEDIR to $OPTARG"
+	    STATEDIR="$OPTARG"
+	    ;;
+	u)
+	    debug "Setting SYSLOGSUMMARY to 1"
+	    SYSLOGSUMMARY="1"
+	    ;;
+	t)
+	    debug "Setting LOGTAIL_OPTS to -t"
+	    LOGTAIL_OPTS='-t'
+	    ;;
+	w)
+	    debug "Setting REPORTLEVEL to workstation"
+	    REPORTLEVEL="workstation"
+	    ;;
+	\?)
+	    usage
+	    exit 1
+	    ;;
+    esac
+done
+debug "Finished getopts $GETOPTS"
+shift `expr $OPTIND - 1`
+
+if [ "$REPORTLEVEL" = "workstation" ]; then
+    REPORTLEVELS="workstation server paranoid"
+elif [ "$REPORTLEVEL" = "server" ]; then
+    REPORTLEVELS="server paranoid"
+elif [ "$REPORTLEVEL" = "paranoid" ]; then
+    REPORTLEVELS="paranoid"
+else
+    error "REPORTLEVEL is set to an unknown value" "noclean"
+fi
+
+trap 'cleanup' 0
+
+debug "Trying to get lockfile: $LOCKFILE.lock"
+if [ ! -d "$LOCKDIR" ]; then
+	mkdir -m 0755 "$LOCKDIR"
+fi
+lockfile-create --retry 1 "$LOCKFILE" > /dev/null 2>&1
+
+
+if [ $? -eq 1 ]; then
+    trap 0
+    if [ -e "${LOCKFILE}.lock" ]; then
+        error "Another logcheck process is still running" "noclean"
+    else
+        error "Failed to get lockfile: $LOCKFILE.lock" "noclean"
+    fi
+
+else
+    debug "Running lockfile-touch $LOCKFILE.lock"
+    lockfile-touch "$LOCKFILE" &
+    LOCK="$!"
+fi
+
+# Create the secure temporary directory or exit
+TMPDIR="$(mktemp -d -p "${TMP:-/tmp}" logcheck.XXXXXX)" \
+    || TMPDIR="$(mktemp -d -p /var/tmp logcheck.XXXXXX)" \
+    || error "Could not create temporary directory"
+
+# Now clean the rulefiles in the directories
+cleanrules "$RULEDIR/cracking.d" "$TMPDIR/cracking"
+cleanrules "$RULEDIR/violations.d" "$TMPDIR/violations"
+cleanrules "$RULEDIR/violations.ignore.d" "$TMPDIR/violations-ignore"
+
+# Now clean the ignore rulefiles for the report levels
+for level in $REPORTLEVELS; do
+    cleanrules "$RULEDIR/ignore.d.$level" "$TMPDIR/ignore"
+done
+
+# The following cracking.ignore directory will only be used if
+# $SUPPORT_CRACKING_IGNORE is set to 1 in the configuration file.
+# This is *only* for local admin use.
+if [ "$SUPPORT_CRACKING_IGNORE" -eq 1 ]; then
+    cleanrules "$RULEDIR/cracking.ignore.d" "$TMPDIR/cracking-ignore"
+fi
+
+# Get the list of log files from config file
+# Handle log rotation correctly, idea taken from Wiktor Niesiobedzki.
+mkdir "$TMPDIR/logoutput" \
+    || error "Could not mkdir for log files"
+if [ ! "$LOGFILE" ] && [ -r "$LOGFILES_LIST" ]; then
+    SAVEIFS=$IFS; IFS=$(echo -en "\n\b");
+    for file in $(egrep --text -v "(^#|^[[:space:]]*$)" "$LOGFILES_LIST"); do
+	logoutput "$file"
+    done
+    IFS=$SAVEIFS
+elif [ "$LOGFILE" ]; then
+    if [ -f "$LOGFILE" ] && [ -r "$LOGFILE" ]; then
+        logoutput "$LOGFILE"
+    else
+	error "$LOGFILE don't exist or we do not have permissions to read it"
+    fi
+elif [ -r "$LOGFILE_FALLBACK" ]; then
+        logoutput "$LOGFILE_FALLBACK"
+else
+    error "Gave up no Logfile exist or we do not have permissions to read it"
+fi
+
+# First sort the logs to remove duplicate lines (from different logfiles with
+# the same lines) and reduce CPU and memory usage afterwards.
+debug "Sorting logs"
+$SORT "$TMPDIR/logoutput"/* | sed -e 's/[[:space:]]\+$//' | cat  \
+    > "$TMPDIR/logoutput-sorted" \
+        || error "Could not output to $TMPDIR/logoutput-sorted."
+
+
+# See if the tmp file exists and actually has data to check,
+# if it doesn't we should erase it and exit as our job is done.
+if [ ! -s "$TMPDIR/logoutput-sorted" -a ! -f "$TMPDIR/errors" ]; then
+    debug "Nothing to report"
+    exit 0
+elif [ ! -s "$TMPDIR/logoutput-sorted" -a -f "$TMPDIR/errors" ]; then
+    error "$(cat "$TMPDIR/errors")"
+fi
+
+if [ "$INTRO" -eq 1 ]; then
+    debug "Setting the Intro"
+    setintro
+else
+    debug "Not setting the Intro"
+fi
+
+if [ -f "$TMPDIR/errors" ]; then
+    {
+	cat<<EOF
+
+$(cat "$TMPDIR/errors")
+
+EOF
+    } >> "$TMPDIR/report" \
+    || error "Could not output to $TMPDIR/report."
+fi
+
+# Check for blatant cracking attempts
+if [ -d "$TMPDIR/cracking" ]; then
+    if [ "$SUPPORT_CRACKING_IGNORE" -eq 1 ]; then
+	debug "Checking for security alerts and using cracking-ignore"
+	if [ -d "$TMPDIR/cracking-ignore" ]; then
+	    greplogoutput "$TMPDIR/cracking" "$ATTACKSUBJECT" \
+		"$TMPDIR/cracking-ignore" && ATTACK="1"
+	fi
+    else
+	debug "Checking for security alerts"
+	greplogoutput "$TMPDIR/cracking" "$ATTACKSUBJECT" \
+	    && ATTACK="1"
+    fi
+fi
+
+# Check for security events
+if [ -d "$TMPDIR/violations" ]; then
+    debug "Checking for security events"
+    rm -f "$TMPDIR/checked"
+
+    if [ "$ATTACK" -eq 1 ]; then
+	greplogoutput "$TMPDIR/violations" "$SECURITYSUBJECT" \
+	    "$TMPDIR/violations-ignore" "$TMPDIR/cracking" && SECURITY="1"
+    else
+	greplogoutput "$TMPDIR/violations" "$SECURITYSUBJECT" \
+	    "$TMPDIR/violations-ignore" && SECURITY="1"
+    fi
+fi
+
+# Do reverse grep on patterns we want to ignore
+if [ -d "$TMPDIR/ignore" ]; then
+    debug "Checking for system events"
+    cp "$TMPDIR/logoutput-sorted" "$TMPDIR/checked" \
+    || error "Could not copy $TMPDIR/logoutput-sorted to $TMPDIR/checked"
+    cleanchecked "$TMPDIR/ignore"
+
+    if [ -s "$TMPDIR/checked" ]; then
+	debug "Removing alerts from system events"
+	cleanchecked "$TMPDIR/cracking"
+    fi
+    if [ -s "$TMPDIR/checked" ]; then
+	debug "Removing violations from system events"
+	cleanchecked "$TMPDIR/violations"
+    fi
+    report "$EVENTSSUBJECT" && SYSTEM="1"
+fi
+
+# Add warnings to report
+if [ -f "$TMPDIR/warnings" ]; then
+	  printheader "Logcheck Warnings" >> "$TMPDIR/report" \
+	  || error "Cannot append warnings to report."
+	cat "$TMPDIR/warnings" >> "$TMPDIR/report" && echo >> "$TMPDIR/report" \
+	  || error "Cannot append warnings to report."
+fi
+
+# Include the footer if present.
+if [ "$INTRO" -eq 1 ]; then
+    debug "Setting the footer text"
+    setfooter
+else
+    debug "Not setting the footer text"
+fi
+
+# If there are results, mail them to sysadmin
+if [ "$ATTACK" -eq 1 ]; then
+    sendreport "$ATTACKSUBJECT"
+elif [ "$SECURITY" -eq 1 ]; then
+    sendreport "$SECURITYSUBJECT"
+elif [ "$SYSTEM" -eq 1 ]; then
+    sendreport "$EVENTSSUBJECT"
+fi

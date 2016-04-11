@@ -1,0 +1,6 @@
+usr/sbin/logcheck
+usr/bin/logcheck-test
+var/lib/logcheck/
+etc/logcheck/logcheck.logfiles
+etc/logcheck/logcheck.conf
+debian/header.txt /usr/share/logcheck/

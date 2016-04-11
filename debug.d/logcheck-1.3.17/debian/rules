@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	docbook-to-man docs/logcheck.sgml > debian/logcheck.8
+	dh_auto_build
+
+override_dh_auto_clean:
+	rm -f debian/logcheck.8
+	dh_auto_clean
+
+override_dh_fixperms:
+	dh_fixperms --exclude /etc/logcheck/logcheck.

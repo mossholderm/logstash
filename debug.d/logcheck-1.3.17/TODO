@@ -1,0 +1,48 @@
+* Extend dh_installlogcheck
+
+  Check for invalid expressions at install time.
+
+  Detects if it is working against logcheck in sid or woody
+    1. For logcheck in sid, just output the files to their proper levels
+
+    1. For logcheck in woody, strip out comments and combine the levels
+       so as to emulate what logcheck in sid does with them
+
+* Re-write regression test suite
+
+   Use PyTest.
+   Expand the tests.
+   Remove duplicate configs and rules in test.
+
+* Overhaul Section titles (post sarge release)
+
+   Rename "Attack Alerts" to "Security Violations" ?
+   Rename some of the .d directories.
+
+* Re-write logtail in c
+
+   Needs to handle rotated files it self
+   Use a BDB (?) database for storing file offsets
+   Have roll back support
+   Store full path to the log file (unmodified)
+
+* Makefile
+
+   Add DOCDIR
+   Enhance it for non Debian Distribution
+
+* Misc
+
+  get sane logic in greplogoutput() to prevent from duplicate ignore runs.
+  logoutput needs too to be sanitized, eventually logtail will to more.
+
+  Add syslog-ng rotation support such that:
+  < weasel> i.e. rotating to syslog.1 and immediately compressing that
+  < weasel> so that we have  log/syslog  (current)  and  log/syslog.1.gz
+
+* Debian Package, post sarge
+  Switch dh_movefiles to dh_install in rules, include header.
+  Use package.manpages, call dh_installman once in rules.
+  Web-based rule submission, with sanity checks.
+  Split logcheck-database from source package to simplify maintenance.
+  Move rulefile permission fixes to logcheck-database postinst.

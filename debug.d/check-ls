@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cat debug-01.conf "$1" debug-30.conf > /etc/logstash/debug.d/debug.conf
+
+cat /etc/logstash/debug.d/test.log | /opt/logstash/bin/logstash -f /etc/logstash/debug.d/debug.conf

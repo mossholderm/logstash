@@ -1,0 +1,57 @@
+Sep 23 14:51:39 home sshd[26350]: @cee: { "_TRANSPORT": "syslog", "PRIORITY": "6", "SYSLOG_FACILITY": "10", "SYSLOG_IDENTIFIER": "sshd", "_UID": "0", "_GID": "0", "_COMM": "sshd", "_EXE": "\/usr\/sbin\/sshd", "_CAP_EFFECTIVE": "1fffffffff", "_SYSTEMD_CGROUP": "\/system.slice\/sshd.service", "_SYSTEMD_UNIT": "sshd.service", "_SYSTEMD_SLICE": "system.slice", "_SELINUX_CONTEXT": "system_u:system_r:sshd_t:s0-s0:c0.c1023", "_BOOT_ID": "2230e31d58b94308ac5c6327c12a5d39", "_MACHINE_ID": "d44e1f83110c47559eab22eb2bacc839", "_HOSTNAME": "home.mossholder.com", "_CMDLINE": "sshd: root [priv]   ", "_PID": "26350", "SYSLOG_PID": "26350", "MESSAGE": "Accepted password for root from 10.0.121.1 port 58673 ssh2", "_SOURCE_REALTIME_TIMESTAMP": "1443034299111498", "msg": "Accepted password for root from 10.0.121.1 port 58673 ssh2" }
+Sep 23 14:35:54 logger01 sshd[7938]: Accepted password for root from 10.0.80.1 port 37577 ssh2
+Sep 22 23:16:13 logger01 sshd[3400]: Accepted publickey for root from 10.0.1.1 port 36903 ssh2: RSA 30:91:77:2e:ab:3a:40:95:72:1e:cd:74:27:d0:17:67
+Sep 23 20:40:23 ap.mossholder.com hostapd: wlan0: STA 00:0d:4b:68:66:75 WPA: group key handshake completed (RSN)
+Sep 23 21:25:55 home sshd[30322]: @cee: { "_TRANSPORT": "syslog", "PRIORITY": "6", "SYSLOG_FACILITY": "10", "SYSLOG_IDENTIFIER": "sshd", "MESSAGE": "Connection closed by 10.0.70.2 [preauth]", "_UID": "0", "_GID": "0", "_COMM": "sshd", "_EXE": "\/usr\/sbin\/sshd", "_CMDLINE": "sshd: [accepted]    ", "_CAP_EFFECTIVE": "1fffffffff", "_SYSTEMD_CGROUP": "\/system.slice\/sshd.service", "_SYSTEMD_UNIT": "sshd.service", "_SYSTEMD_SLICE": "system.slice", "_SELINUX_CONTEXT": "system_u:system_r:sshd_t:s0-s0:c0.c1023", "_BOOT_ID": "2230e31d58b94308ac5c6327c12a5d39", "_MACHINE_ID": "d44e1f83110c47559eab22eb2bacc839", "_HOSTNAME": "home.mossholder.com", "SYSLOG_PID": "30322", "_PID": "30322", "_SOURCE_REALTIME_TIMESTAMP": "1443057955589439", "msg": "Connection closed by 10.0.70.2 [preauth]" }
+Sep 23 13:31:30 logger01 sshd[5881]: pam_unix(sshd:session): session opened for user root by (uid=0)
+Sep 22 22:54:30 logger01 sshd[9440]: Did not receive identification string from 10.0.70.2
+Sep 23 14:34:45 logger01 sshd[5881]: pam_unix(sshd:session): session closed for user root
+Sep 23 09:55:32 logger01 sshd[1211]: Server listening on :: port 22.
+Sep 22 23:09:51 logger01 sshd[1197]: Received signal 15; terminating.
+Sep 23 09:55:32 logger01 sshd[1211]: Server listening on 0.0.0.0 port 22.
+Sep 22 23:16:13 logger01 sshd[3400]: error: AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys returned status 1
+Sep 23 21:31:40 logger01 rsyslogd-2177: imjournal: begin to drop messages due to rate-limiting
+Sep 23 21:34:44 logger01 rsyslogd-2177: imjournal: 1667 messages lost due to rate-limiting
+Sep 23 21:52:16 logger01 rsyslogd: [origin software="rsyslogd" swVersion="7.4.7" x-pid="3918" x-info="http://www.rsyslog.com"] exiting on signal 15.
+Sep 23 21:57:22 logger01 rsyslogd: [origin software="rsyslogd" swVersion="7.4.7" x-pid="17675" x-info="http://www.rsyslog.com"] start
+Sep 23 05:55:24 logger01 polkitd[1139]: Acquired the name org.freedesktop.PolicyKit1 on the system bus
+Sep 23 09:55:27 logger01 chronyd[537]: System clock wrong by 14402.301213 seconds, adjustment started
+Sep 23 09:55:27 logger01 chronyd[537]: System clock was stepped by 14402.301 seconds
+Sep 23 09:55:28 logger01 network: Bringing up interface eth0: [ OK ]
+Sep 23 09:55:29 logger01 sm-notify[1212]: Version 1.3.0 starting
+Sep 23 09:55:32 logger01 logstash-forwarder: logstash-forwarder started
+Sep 23 09:55:32 logger01 /etc/init.d/logstash-forwarder: Attempting 'start' on logstash-forwarder
+Sep 23 09:55:27 logger01 chronyd[537]: Selected source 10.0.100.1
+Sep 23 05:55:24 logger01 dbus[531]: [system] Successfully activated service 'org.freedesktop.PolicyKit1'
+tlb_flushall_shift: 6
+Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0
+Sep 23 05:55:24 logger01 polkitd[1139]: Finished loading, compiling and executing 2 rules
+Sep 23 05:55:24 logger01 polkitd[1139]: Loading rules from directory /usr/share/polkit-1/rules.d
+Sep 23 05:55:24 logger01 polkitd[1139]: Loading rules from directory /etc/polkit-1/rules.d
+Sep 23 15:52:49 logger01 systemd: Stopping logstash.service...
+Sep 23 15:52:49 logger01 systemd: Started logstash.service.
+Sep 23 13:52:09 logger01 systemd: Stopped logstash.service.
+Sep 23 15:01:01 logger01 systemd: Starting Session 12 of user root.
+Sep 23 13:52:14 logger01 systemd: Starting Starts and stops a single elasticsearch instance on this system...
+Sep 23 13:50:39 logger01 systemd: Stopping Starts and stops a single elasticsearch instance on this system...
+Sep 23 13:33:51 logger01 systemd: Reloading Postfix Mail Transport Agent.
+Sep 23 13:33:51 logger01 systemd: Reloaded Postfix Mail Transport Agent.
+Sep 24 07:46:25 logger01 sshd[28305]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=home.mossholder.com user=root
+Sep 23 11:07:53 ap.mossholder.com kernel: [730078.930000] Atheros AR8216/AR8236/AR8316 ag71xx-mdio.0:00: Port 3 is up
+Sep 23 15:01:01 logger01 systemd: Started Session 12 of user root.
+Sep 24 07:46:30 logger01 systemd-logind: New session 30 of user root.
+Sep 23 14:34:45 logger01 systemd-logind: Removed session 9.
+Sep 23 14:30:33 ap.mossholder.com dnsmasq[1273]: possible DNS-rebind attack detected: ipa01.mossholder.com
+Sep 23 10:05:18 logger01 systemd: Starting Cleanup of Temporary Directories...
+Sep 23 09:58:25 logger01 systemd: Created slice user-0.slice.
+Sep 23 09:58:25 logger01 systemd: Starting user-0.slice.
+Sep 24 07:59:01 logger01 systemd: Started System Logging Service.
+Sep 24 07:56:10 logger01 systemd: Stopped Starts and stops a single elasticsearch instance on this system.
+Sep 24 07:56:10 logger01 sssd_be: GSSAPI client step 1
+Sep 24 07:56:10 logger01 run-parts(/etc/cron.hourly): (apache) CMD (php -f /var/www/html/owncloud/cron.php)
+Sep 24 07:56:10 logger01 run-parts(/etc/cron.hourly): finished 0anacron
+Sep 24 07:56:10 logger01 run-parts(/etc/cron.hourly): finished 0yum-hourly.cron
+Sep 24 07:56:10 logger01 run-parts(/etc/cron.hourly): starting 0yum-hourly.cron
+Sep 24 07:56:10 logger01 run-parts(/etc/cron.hourly): starting 0anacron
+Sep 24 07:56:10 logger01 CROND: (root) CMD (run-parts /etc/cron.hourly)
+Sep 23 14:51:39 home sshd[26350]: @cee: { "_UID": "0", "_GID": "0", "_SYSTEMD_SLICE": "system.slice", "_MACHINE_ID": "d44e1f83110c47559eab22eb2bacc839", "_HOSTNAME": "home.mossholder.com", "PRIORITY": "7", "_CAP_EFFECTIVE": "1fffffffff", "_TRANSPORT": "syslog", "SYSLOG_FACILITY": "4", "_SYSTEMD_CGROUP": "\/system.slice\/sssd.service", "_SYSTEMD_UNIT": "sssd.service", "_SELINUX_CONTEXT": "system_u:system_r:sssd_t:s0", "_COMM": "sssd_be", "_EXE": "\/usr\/libexec\/sssd\/sssd_be", "_CMDLINE": "\/usr\/libexec\/sssd\/sssd_be --domain mossholder.com --debug-to-files", "SYSLOG_IDENTIFIER": "sssd_be", "MESSAGE": "GSSAPI client step 1", "_BOOT_ID": "3cbdf1aa808d4ef0aef6a4c1f022a624", "_PID": "797", "_SOURCE_REALTIME_TIMESTAMP": "1411690502235689", "msg": "GSSAPI client step 1" }

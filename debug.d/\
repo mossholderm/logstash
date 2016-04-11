@@ -1,0 +1,170 @@
+filter {
+  if [type] == "cee" {
+    mutate {
+      add_field => { "original" => "%{message}" }
+    }
+  }
+  if [type] == "syslog" {
+    if ![syslog.message] and [message] !~ /\w{3} (\s|\d)\d \d\d:/  {
+      mutate {
+        add_field => { "syslog.message" => "%{message}" }
+      }
+    }
+
+    grok {
+      match => { "message" => [ "%{SYSLOGTIMESTAMP:tmp} %{SYSLOGHOST} %{DATA}(?:\[%{POSINT}\])?: @cee: %{GREEDYDATA:jsonmsg}",
+                                "%{SYSLOGTIMESTAMP:syslog.timestamp} %{SYSLOGHOST:syslog.hostname} %{DATA:syslog.program}(?:\[%{POSINT:syslog.pid}\])?: %{GREEDYDATA:syslog.message}"
+                              ] }
+    }
+    syslog_pri { }
+    date {
+      match => [ "syslog.timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+    }
+    json {
+      source => "jsonmsg"
+    }
+    mutate {
+      strip  => [ "jsonmsg", "msg" ]
+      rename => { "syslog_timestamp"      => "syslog_timestamp" }
+      rename => { "syslog_priority"       => "syslog.priority" }
+      rename => { "syslog_facility_code"  => "syslog.code.facility" }
+      rename => { "syslog_severity_code"  => "syslog.code.severity" }
+      rename => { "syslog_facility"       => "syslog.facility" }
+      rename => { "syslog_severity"       => "syslog.severity" }
+      rename => { "CODE_FILE" => "systemd.sourcecode.file" }
+      rename => { "CODE_FUNCTION" => "systemd.sourcecode.function" }
+      rename => { "CODE_LINE" => "systemd.sourcecode.line" }
+      rename => { "EXIT_CODE" => "systemd.code.exit" }
+      rename => { "EXIT_STATUS" => "systemd.status.exit" }
+      rename => { "INITRD_USEC" => "systemd.initrd.usec" }
+      rename => { "KERNEL_USEC" => "systemd.kernel.usec" }
+      rename => { "LEADER" => "systemd.leader" }
+      rename => { "MESSAGE" => "syslog.message" }
+      rename => { "MESSAGE_ID" => "systemd.message_id" }
+      rename => { "PRIORITY" => "syslog.code.severity" }
+      rename => { "RESULT" => "result" }
+      rename => { "SESSION_ID" => "systemd.session_id" }
+      rename => { "SEAT_ID" => "systemd.seat_id" }
+      rename => { "SYSLOG_FACILITY" => "syslog.code.facility" }
+      rename => { "SYSLOG_IDENTIFIER" => "syslog.identifier" }
+      rename => { "SYSLOG_PID" => "syslog.pid" }
+      rename => { "UNIT" => "systemd.unit" }
+      rename => { "USER_ID" => "systemd.user_id" }
+      rename => { "USERSPACE_USEC" => "systemd.userspace.usec" }
+      rename => { "WHERE" => "systemd.where" }
+      rename => { "_AUDIT_LOGINUID" => "systemd.audit_loginuid" }
+      rename => { "_AUDIT_SESSION" => "systemd.audit_session" }
+      rename => { "_BOOT_ID" => "systemd.id.boot" }
+      rename => { "_CAP_EFFECTIVE" => "systemd.cap_effective" }
+      rename => { "_CMDLINE" => "systemd.command_line" }
+      rename => { "_COMM" => "syslog.program" }
+      rename => { "_EXE" => "systemd.executable" }
+      rename => { "_GID" => "gid" }
+      rename => { "_HOSTNAME" => "syslog.hostname" }
+      rename => { "_MACHINE_ID" => "systemd.id.machine" }
+      rename => { "_PID" => "syslog.pid" }
+      rename => { "_SELINUX_CONTEXT" => "selinux.context" }
+      rename => { "_SOURCE_MONOTONIC_TIMESTAMP" => "systemd.timestamp.monotonic" }
+      rename => { "_SOURCE_REALTIME_TIMESTAMP" => "systemd.timestamp.realtime" }
+      rename => { "_SYSTEMD_CGROUP" => "systemd.cgroup" }
+      rename => { "_SYSTEMD_OWNER_UID" => "systemd.owner_uid" }
+      rename => { "_SYSTEMD_SESSION" => "systemd.session" }
+      rename => { "_SYSTEMD_SLICE" => "systemd.slice" }
+      rename => { "_SYSTEMD_UNIT" => "systemd.unit" }
+      rename => { "_TRANSPORT" => "transport" }
+      rename => { "_UID" => "uid"  }
+      rename => { "msg" => "message" }
+      convert => { "syslog.code.facility" => "integer" }
+      convert => { "syslog.code.severity" => "integer" }
+      convert => { "syslog.pid" => "integer" }
+      convert => { "systemd.timestamp.realtime" => "integer" }
+      convert => { "uid" => "integer" }
+      convert => { "gid" => "integer" }
+      convert => { "signal" => "integer" }
+      add_field => [ "received.at", "%{@timestamp}" ]
+      add_field => [ "received.from", "%{host}" ]
+      remove_field => [ "tmp","tmp1","tmp2","tmp3"]
+    }
+
+    grok {
+        tag_on_failure => [ "Unknown Message" ]
+        add_tag => ["Known Message"]
+        patterns_dir => [ "/etc/logstash/patterns.d" ]
+        match => { "syslog.message" => [ 
+                                       "GSSAPI client step \d",
+                                       "\(apache\) CMD \(php -f /var/www/html/owncloud/cron\.php\)",
+                                       "Starting Cleanup of Temporary Directories\.\.\.",
+                                       "(Created slice|Starting) \S+\.slice\.",
+                                       "Accepted %{WORD:ssh.auth.method} for %{WORD:username.dst} from %{IPORHOST:hostname.src} port %{POSINT:ip.src.port} %{WORD:ssh.version}: %{WORD:ssh.key.type} %{GREEDYDATA:ssh.key.fingerprint}",
+                                       "Accepted %{WORD:ssh.auth.method} for %{WORD:username.dst} from %{IPORHOST:hostname.src} port %{POSINT:ip.src.port} %{WORD:ssh.version}",
+                                       "%{WORD:intf.dst}: STA %{MAC:mac.src} %{GREEDYDATA:result}",
+                                       "Connection closed by %{IPORHOST:ip.src} \[preauth\]",
+                                       "pam_\w+\(\w+:session\): session opened for user %{EXTENDED_USER:username.dst} by \(uid=\d+\)",
+                                       "pam_\w+\(\w+:auth\): authentication failure; logname=\w* uid=\d+ euid=\d+ tty=\w+ ruser=\w* rhost=%{IPORHOST:hostname.src} user=%{USERNAME:username.dst}",
+                                       "Did not receive identification string from %{IPORHOST:hostname.src}",
+                                       "pam_\w+\(sshd:session\): session closed for user %{EXTENDED_USER}",
+                                       "Received signal %{POSINT:signal}; terminating\.",
+                                       "Server listening on %{IP:ip.dst} port %{POSINT:ip.dst.port}\.",
+                                       "error: %{WORD:ssh.module} %{DATA:ssh.module.value} returned status %{POSINT:result}",
+                                       "tlb_flushall_shift: \d+",
+                                       "Last level dTLB entries: 4KB \d+, 2MB \d+, 4MB \d+",
+                                       "\S+: begin to drop messages due to rate-limiting",
+                                       "\S+: \d+ messages lost due to rate-limiting",
+                                       "\[origin software=\"rsyslogd\" swVersion=\"[0-9.]+\" x-pid=\"\d+\" x-info=\"http://www.rsyslog.com\"\] exiting on signal %{POSINT:signal}.",
+                                       "\[origin software=\"rsyslogd\" swVersion=\"[0-9.]+\" x-pid=\"\d+\" x-info=\"http://www.rsyslog.com\"\] start",
+                                       "/etc/init.d/\S+: \S+ started",
+                                       "/etc/init.d/\S+: \S+ stopped",
+                                       "Attempting 'start' on \S+",
+                                       "System clock wrong by [0-9.-] seconds, adjustment started",
+                                       "System clock was stepped by [0-9.]+ seconds",
+                                       "Bringing up interface %{INTERFACENAME:intf.dst}: [ OK ]",
+                                       "Version [0-9.]+ starting",
+                                       "\S+ started",
+                                       "Selected source %{IPORHOST:ip.dst}",
+                                       "Acquired the name %{NOTSPACE:dbus.service.name} on the system bus",
+                                       "\[system\] Successfully activated service \'%{NOTSPACE:dbus.service.name}\'",
+                                       "Finished loading, compiling and executing \d+ rules",
+                                       "Loading rules from directory /usr/share/polkit-1/rules\.d",
+                                       "Loading rules from directory /etc/polkit-1/rules\.d",
+                                       "Reload(ing|ed) .+\.",
+                                       "\[\d+.\d+\] Atheros AR8216/AR8236/AR8316 ag71xx-mdio.0:00: Port \d+ is (up|down)",
+                                       "Started Session \d+ of user %{USERNAME:username.dst}\.",
+                                       "New session \d+ of user %{USERNAME:username.dst}\.",
+                                       "Removed session \d+\.",
+                                       "possible DNS-rebind attack detected: %{IPORHOST:hostname.src}",
+                                       "(Started|Starting|Stopping|Stopped) .+\.\.?\.?",
+                                       "finished (0yum-hourly.cron|0anacron)",
+                                       "starting (0yum-hourly.cron|0anacron)"
+                                     ] }
+    }
+    grok {
+        tag_on_failure => [ ]
+        add_tag => ["Test Pass"]
+        patterns_dir => [ "/etc/logstash/patterns.d" ]
+        match => { "syslog.message" => [ 
+                                       "^GSSAPI client step \d$"
+                                     ] }
+    }
+
+    if [intf.dst] =~ "wlan" {
+      mutate {
+        add_tag => [ "wifi" ]
+      }
+    }
+
+    if [syslog.program] =~ /rsyslogd-/ {
+      grok {
+       match => { "syslog.program" => "%{WORD:tmp}-%{POSINT:syslog.pid}" }
+      }
+      mutate {
+        replace => { "syslog.program" => "%{tmp}" }
+        remove_field => [ "tmp" ]
+      }
+    }
+    if [transport] == "syslog" {
+      mutate {
+        replace => { "type" => "cee" }
+      }
+    }
+  }
+}

@@ -1,0 +1,282 @@
+<!doctype refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+
+<!-- Process this file with docbook-to-man to generate an nroff manual
+     page: `docbook-to-man manpage.sgml > manpage.1'.  You may view
+     the manual page with: `docbook-to-man manpage.sgml | nroff -man |
+     less'.  A typical entry in a Makefile or Makefile.am is:
+
+manpage.1: manpage.sgml
+	docbook-to-man $< > $@
+
+
+	The docbook-to-man binary is found in the docbook-to-man package.
+	Please remember that if you create the nroff version in one of the
+	debian/rules file targets (such as build), you will need to include
+	docbook-to-man in your Build-Depends control field.
+
+  -->
+
+  <!-- Fill in your name for FIRSTNAME and SURNAME. -->
+  <!ENTITY dhfirstname "<firstname>Jon</firstname>">
+  <!ENTITY dhsurname   "<surname>Middleton</surname>">
+  <!-- Please adjust the date whenever revising the manpage. -->
+  <!ENTITY dhdate      "<date>May 3, 2005</date>">
+  <!-- SECTION should be 1-8, maybe w/ subsection other parameters are
+       allowed: see man(7), man(1). -->
+  <!ENTITY dhsection   "<manvolnum>8</manvolnum>">
+  <!ENTITY dhemail     "<email>jjm@debian.org</email>">
+  <!ENTITY dhusername  "Jon Middleton">
+  <!ENTITY dhucpackage "<refentrytitle>Logcheck</refentrytitle>">
+  <!ENTITY dhpackage   "logcheck">
+
+  <!ENTITY debian      "<productname>Debian</productname>">
+  <!ENTITY gnu         "<acronym>GNU</acronym>">
+]>
+
+<refentry>
+  <refentryinfo>
+    <address>
+      &dhemail;
+    </address>
+    <author>
+      &dhfirstname;
+      &dhsurname;
+    </author>
+    <copyright>
+      <year>2004</year>
+      <holder>&dhusername;</holder>
+    </copyright>
+    &dhdate;
+  </refentryinfo>
+  <refmeta>
+    &dhucpackage;
+
+    &dhsection;
+  </refmeta>
+  <refnamediv>
+    <refname>&dhpackage;</refname>
+
+    <refpurpose>program to scan system logs for interesting lines</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>&dhpackage;</command>
+
+      <arg>OPTIONS</arg>
+
+    </cmdsynopsis>
+  </refsynopsisdiv>
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    <para>The <command>&dhpackage;</command> program helps spot problems and
+    security violations in your logfiles automatically and will send the
+    results to you periodically in an e-mail. By default logcheck runs as
+    an hourly cronjob just off the hour and after every reboot.</para>
+
+    <para><command>&dhpackage;</command> supports three level of filtering:
+    "paranoid" is for high-security machines running as few services
+    as possible. Don't use it if you can't handle its verbose messages.
+    "server" is the default and contains rules for many different daemons.
+    "workstation" is for sheltered machines and filters most of the messages.
+    The ignore rules work in additive manner. "paranoid" rules are also
+    included at level "server". "workstation" level includes both "paranoid"
+    and "server" rules.</para>
+
+    <para>The messages reported are sorted into three layers, system events,
+    security events and attack alerts. The verbosity of system events is
+    controlled by which level you choose, paranoid, server or workstation.
+    However, security events and attack alerts are not affected by this.</para>
+
+  </refsect1>
+  <refsect1>
+    <title>EXAMPLES</title>
+
+
+    <para><command>&dhpackage;</command> can be invoked directly thanks
+    to su(8) or sudo(8), which change the user ID. The following example checks the logfiles
+    without updating the offset and outputs everything to STDOUT.</para>
+
+    <para>sudo -u logcheck <command>&dhpackage;</command> -o -t</para>
+
+  </refsect1>
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <para>A summary of options is included below.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><option>-c CFG</option>
+        </term>
+        <listitem>
+          <para>Overrule default configuration file.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-d</option>
+        </term>
+        <listitem>
+          <para>Debug mode.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-h</option>
+        </term>
+        <listitem>
+          <para>Show usage information.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-H</option>
+        </term>
+        <listitem>
+          <para>Use this hostname string in the subject of logcheck mail.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-l LOG</option>
+        </term>
+        <listitem>
+          <para>Run logfile through logcheck.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-L CFG</option>
+        </term>
+        <listitem>
+          <para>Overrule default logfiles list.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-m</option>
+        </term>
+        <listitem>
+          <para>Mail report to recipient.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-o</option>
+        </term>
+        <listitem>
+          <para>STDOUT mode, not sending mail.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-p</option>
+        </term>
+        <listitem>
+          <para>Set the report level to "paranoid".</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-r DIR</option>
+        </term>
+        <listitem>
+          <para>Overrule default rules directory.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-R</option>
+        </term>
+        <listitem>
+          <para>Adds "Reboot:" to the email subject line.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-s</option>
+        </term>
+        <listitem>
+          <para>Set the report level to "server".</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-S DIR</option>
+        </term>
+        <listitem>
+          <para>Overrule default state directory.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-t</option>
+        </term>
+        <listitem>
+          <para>Testing mode does not update offset.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-T</option>
+        </term>
+        <listitem>
+          <para>Do not remove the TMPDIR.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-u</option>
+        </term>
+        <listitem>
+          <para>Enable syslog-summary.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-v</option>
+        </term>
+        <listitem>
+          <para>Print current version.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>-w</option>
+        </term>
+        <listitem>
+          <para>Set the report level to "workstation".</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+  <refsect1>
+    <title>FILES</title>
+
+    <para>/etc/logcheck/logcheck.conf is the main configuration file.</para>
+    <para>/etc/logcheck/logcheck.logfiles is the list of files to monitor.</para>
+    <para>/usr/share/doc/logcheck-database/README.logcheck-database.gz for hints on how to write, test and maintain rules.</para>
+  </refsect1>
+  <refsect1>
+    <title>EXIT STATUS</title>
+    <para>0 upon success; 1 upon failure</para>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+
+    <para><command>logtail</command>(8)</para>
+  </refsect1>
+
+  <refsect1>
+    <title>AUTHOR</title>
+
+    <para>&dhpackage; is developed by Debian &dhpackage; Team at alioth:
+    http://alioth.debian.org/projects/logcheck/.</para>
+
+    <para>This manual page was written by &dhusername;.</para>
+  </refsect1>
+</refentry>
+
+<!-- Keep this comment at the end of the file
+Local variables:
+mode: sgml
+sgml-omittag:t
+sgml-shorttag:t
+sgml-minimize-attributes:nil
+sgml-always-quote-attributes:t
+sgml-indent-step:2
+sgml-indent-data:t
+sgml-parent-document:nil
+sgml-default-dtd-file:nil
+sgml-exposed-tags:nil
+sgml-local-catalogs:nil
+sgml-local-ecat-files:nil
+End:
+-->
+
+

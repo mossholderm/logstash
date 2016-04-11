@@ -1,0 +1,10 @@
+#!/bin/sh
+
+systemctl stop rsyslog logstash kibana4 && \
+curator delete indices --all-indices && \
+rm -f /var/lib/rsyslogd/imjournal.state && \
+systemctl start elasticsearch && \
+sleep 15 && \
+systemctl start logstash rsyslog && \
+sleep 15 && \
+systemctl start kibana4

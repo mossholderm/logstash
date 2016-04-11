@@ -1,0 +1,8 @@
+/var/lib/logcheck
+/etc/logcheck/ignore.d.paranoid
+/etc/logcheck/ignore.d.workstation
+/etc/logcheck/ignore.d.server
+/etc/logcheck/cracking.d
+/etc/logcheck/cracking.ignore.d
+/etc/logcheck/violations.d
+/etc/logcheck/violations.ignore.d
