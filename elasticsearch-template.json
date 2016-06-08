@@ -5,85 +5,364 @@
   },
   "mappings" : {
     "_default_" : {
-       "_all" : {"enabled" : true, "omit_norms" : true},
-       "dynamic_templates" : [ {
-         "message_field" : {
-           "match" : "message",
-           "match_mapping_type" : "string",
-           "mapping" : {
-             "type" : "string", "index" : "analyzed", "omit_norms" : true
-           }
-         }
-       }, {
-         "string_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "string",
-           "mapping" : {
-             "type" : "string", "index" : "analyzed", "omit_norms" : true,
-               "fields" : {
-                 "raw" : {"type": "string", "index" : "not_analyzed", "doc_values" : true, "ignore_above" : 256}
+      "_all" : {"enabled" : true, "omit_norms" : true},
+      "dynamic_templates" : [ {
+        "message_field" : {
+          "match" : "message",
+          "match_mapping_type" : "string",
+          "mapping" : {
+            "type" : "string", "index" : "analyzed", "omit_norms" : true
+          }
+        }
+      }, {
+        "string_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "string",
+          "mapping" : {
+            "type" : "string", "index" : "analyzed", "omit_norms" : true,
+            "fields" : {
+              "raw" : {"type": "string", "index" : "not_analyzed", "doc_values" : true, "ignore_above" : 256}
+            }
+          }
+        }
+      }, {
+        "float_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "float",
+          "mapping" : { "type" : "float", "doc_values" : true }
+        }
+      }, {
+        "double_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "double",
+          "mapping" : { "type" : "double", "doc_values" : true }
+        }
+      }, {
+        "byte_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "byte",
+          "mapping" : { "type" : "byte", "doc_values" : true }
+        }
+      }, {
+        "short_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "short",
+          "mapping" : { "type" : "short", "doc_values" : true }
+        }
+      }, {
+        "integer_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "integer",
+          "mapping" : { "type" : "integer", "doc_values" : true }
+        }
+      }, {
+        "long_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "long",
+          "mapping" : { "type" : "long", "doc_values" : true }
+        }
+      }, {
+        "date_fields" : {
+          "match" : "*",
+          "match_mapping_type" : "date",
+          "mapping" : { "type" : "date", "doc_values" : true }
+        }
+      } ],
+        "properties" : {
+          "@timestamp":                    { "type": "date",                                      "doc_values" : true },
+          "@version":                      { "type": "string",     "index": "not_analyzed",       "doc_values" : true },
+          "ansible": {
+            "type" : "object",
+            "properties" : {
+               "fact_path":                { "type": "string",     "index": "not_analyzed",       "doc_values" : true },
+               "filter":                   { "type": "string",     "index": "not_analyzed",       "doc_values" : true }
+            }
+          },
+          "file" :                         { "type": "string",     "index": "not_analyzed",       "doc_values" : true },
+          "files": {
+            "type" : "object",
+            "properties" : {
+               "dst": {
+                 "type" : "object",
+                 "properties" : {
+                    "filename" :           { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                 }
+               },
+               "src": {
+                 "type" : "object",
+                 "properties" : {
+                    "filename" :           { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                 }
                }
+            }
+          },
+          "host": {
+            "type": "object",
+            "properties": {
+              "dst": { 
+                "type": "object", 
+                "properties": { 
+                  "ipv4":                  { "type": "ip",                                        "doc_values" : true },
+                  "ipv6":                  { "type": "string",     "index" : "not_analyzed",      "doc_values" : true },
+                  "hostname":              { "type": "string",     "index" : "not_analyzed",      "doc_values" : true },
+                  "macaddress":            { "type": "string",     "index" : "not_analyzed",      "doc_values" : true },
+                  "port":                  { "type": "integer",                                   "doc_values" : true },
+                  "geoip"  : {
+                    "type" : "object",
+                    "dynamic": true,
+                    "properties" : {
+                      "ip" :               { "type" : "ip",                                       "doc_values" : true },
+                      "location" :         { "type" : "geo_point",                                "doc_values" : true },
+                      "latitude" :         { "type" : "float",                                    "doc_values" : true },
+                      "longitude" :        { "type" : "float",                                    "doc_values" : true },
+                      "postal_code" :      { "type" : "string",    "index" : "not_analyzed",      "doc_values" : true },
+                      "real_region_name" : { "type" : "string",    "index" : "not_analyzed",      "doc_values" : true },
+                      "region_name" :      { "type" : "string",    "index" : "not_analyzed",      "doc_values" : true },
+                      "timezone" :         { "type" : "string",    "index" : "not_analyzed",      "doc_values" : true },
+                      "area_code" :        { "type" : "long"                                                          },
+                        "asn" :            { "type" : "string",    "index" : "not_analyzed"                           },
+                        "city_name" :      { "type" : "string",    "index" : "not_analyzed"                           },
+                        "continent_code" : { "type" : "string",    "index" : "not_analyzed"                           },
+                        "country_code2" :  { "type" : "string",    "index" : "not_analyzed"                           },
+                        "country_code3" :  { "type" : "string",    "index" : "not_analyzed"                           },
+                        "country_name" :   { "type" : "string",    "index" : "not_analyzed"                           },
+                        "dma_code" :       { "type" : "long"                                                          },
+                        "number" :         { "type" : "string",    "index" : "not_analyzed",      "doc_values" : true }
+                    }
+                  }
+                } 
+              },
+              "src": { 
+                "type": "object", 
+                "properties": { 
+                  "ipv4":                  { "type" : "ip",                                       "doc_values" : true },
+                  "ipv6":                  { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "hostname":              { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "macaddress":            { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "port":                  { "type" : "integer",                                  "doc_values" : true },
+                  "geoip"  : {
+                    "type" : "object",
+                    "dynamic": true,
+                    "properties" : {
+                      "ip" :               { "type" : "ip",                                       "doc_values" : true },
+                      "location" :         { "type" : "geo_point",                                "doc_values" : true },
+                      "latitude" :         { "type" : "float",                                    "doc_values" : true },
+                      "longitude" :        { "type" : "float",                                    "doc_values" : true },
+                      "postal_code" :      { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true },
+                      "real_region_name" : { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true },
+                      "region_name" :      { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true },
+                      "timezone" :         { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true },
+                      "area_code" :        { "type" : "long"                                                          },
+                        "asn" :            { "type" : "string",     "index" : "not_analyzed"                          },
+                        "city_name" :      { "type" : "string",     "index" : "not_analyzed"                          },
+                        "continent_code" : { "type" : "string",     "index" : "not_analyzed"                          },
+                        "country_code2" :  { "type" : "string",     "index" : "not_analyzed"                          },
+                        "country_code3" :  { "type" : "string",     "index" : "not_analyzed"                          },
+                        "country_name" :   { "type" : "string",     "index" : "not_analyzed"                          },
+                        "dma_code" :       { "type" : "long"                                                          },
+                        "number" :         { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true }
+
+                    }
+                  }
+                } 
+              }
+            }  
+          },
+          "http": {
+            "type": "object",
+            "properties": {
+              "headers": {
+                "type" : "object",
+                "properties" : {
+                  "accept":                { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "accept-encoding" :      { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "accept-language" :      { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "connection" :           { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "content-length" :       { "type" : "integer",                                  "doc_values" : true },
+                  "content-type" :         { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "dnt" :                  { "type" : "boolean",                                  "doc_values" : true },
+                  "host" :                 { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "kbn-version" :          { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "origin" :               { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "referer" :              { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "user-agent" :           { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "via" :                  { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "x-forwarded-for" :      { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "x-forwarded-host" :     { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true },
+                  "x-forwarded-server" :   { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true }
+                }
+              },
+              "verb":                      { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true }, 
+              "request": { 
+                "type" : "object", 
+                "properties" : { 
+                  "path" :                 { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true }, 
+                  "param_list" :           { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true }, 
+                  "remoteAddress" :        { "type" : "ip",                                       "doc_values" : true }, 
+                  "uri" :                  { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true }, 
+                  "user" :                 { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true }, 
+                  "version" :              { "type" : "string",     "index" :  "not_analyzed",    "doc_values" : true }, 
+                  "params": { 
+                    "type" : "object", 
+                    "properties" : { }
+                  }             
+                } 
+              }, 
+              "response": { 
+                "type" : "object", 
+                "properties" : { 
+                  "content-length" :      { "type" : "integer",                                   "doc_values" : true }, 
+                  "response-time" :       { "type" : "integer",                                   "doc_values" : true }, 
+                  "code" :                { "type" : "integer",                                   "doc_values" : true } 
+                } 
+              }             
+            }
+          },
+          "owncloud" : {
+            "type" : "object",
+            "properties" : {
+              "app" :                     { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },                    
+              "exception" : {
+                "type" : "object",
+                "properties" : {
+                  "code" :                { "type" : "integer", "index" : "not_analyzed",         "doc_values" : true },
+                  "exception" :           { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "file" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "line" :                { "type" : "integer",                                   "doc_values" : true },
+                  "message" :             { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "trace" :               { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "user" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "level" :                   { "type" : "integer",                                   "doc_values" : true },
+              "message" :                 { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "reqId" :                   { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "time" :                    { "type" : "date"                                                           }
+            }
+          },
+          "systemd" : {
+            "type" : "object", 
+            "properties" : { 
+              "audit"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "loginuid" :            { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "session" :             { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "boot_id" :                 { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }, 
+              "cap" : {
+                "type" : "object", 
+                "properties" : { 
+                  "effective" :           { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "cgroup" :                  { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "code" : {
+                "type" : "object",
+                "properties" : {
+                  "exit" :                { "type" : "integer", "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "command_line" :            { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "executable" :              { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "gid" :                     { "type" : "integer",                                   "doc_values" : true },
+              "hostname" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "initrd"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "usec" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "job"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "result" :              { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "type" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "kernel"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "usec" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "leader" :                  { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "machine_id" :              { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "message_id" :              { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "owner"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "uid" :                 { "type" : "integer",                                   "doc_values" : true }
+                }
+              },
+              "pid" :                     { "type" : "integer",                                   "doc_values" : true },
+              "priority" :                { "type" : "integer",                                   "doc_values" : true },
+              "program" :                 { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "result" :                  { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "seat"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "id" :                  { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "selinux"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "context" :             { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "session" :                 { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "session_id" :              { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "slice" :                   { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "sourcecode" : {
+                "type" : "object",
+                "properties" : {
+                  "file" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "function" :            { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "func" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                  "line" :                { "type" : "integer",                                   "doc_values" : true }
+                }
+              },
+              "status"  : {
+                "type" : "object", 
+                "properties" : { 
+                  "exit" :                { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+                }
+              },
+              "timestamp" : {
+                "type" : "object", 
+                "properties" : {  
+                  "monotonic" :           { "type" : "long",                                      "doc_values" : true },
+                  "realtime" :            { "type" : "long",                                      "doc_values" : true }
+                }
+              },
+              "transport" :               { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "uid" :                     { "type" : "integer",                                   "doc_values" : true },
+              "unit" :                    { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+              "where" :                   { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true }
+            }
+          },
+          "user": {
+            "type" : "object",
+            "properties" : {
+               "dst": {
+                 "type" : "object",
+                 "properties" : {
+                    "username" :          { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                    "uid":                { "type" : "long",                                      "doc_values" : true }      
+                 }
+               },
+               "src": {
+                 "type" : "object",
+                 "properties" : {
+                    "username" :          { "type" : "string",  "index" : "not_analyzed",         "doc_values" : true },
+                    "uid":                { "type" : "long",                                      "doc_values" : true }      
+                 }
+               }
+             }
            }
-         }
-       }, {
-         "float_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "float",
-           "mapping" : { "type" : "float", "doc_values" : true }
-         }
-       }, {
-         "double_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "double",
-           "mapping" : { "type" : "double", "doc_values" : true }
-         }
-       }, {
-         "byte_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "byte",
-           "mapping" : { "type" : "byte", "doc_values" : true }
-         }
-       }, {
-         "short_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "short",
-           "mapping" : { "type" : "short", "doc_values" : true }
-         }
-       }, {
-         "integer_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "integer",
-           "mapping" : { "type" : "integer", "doc_values" : true }
-         }
-       }, {
-         "long_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "long",
-           "mapping" : { "type" : "long", "doc_values" : true }
-         }
-       }, {
-         "date_fields" : {
-           "match" : "*",
-           "match_mapping_type" : "date",
-           "mapping" : { "type" : "date", "doc_values" : true }
-         }
-       } ],
-       "properties" : {
-         "@timestamp": { "type": "date", "doc_values" : true },
-         "@version": { "type": "string", "index": "not_analyzed", "doc_values" : true },
-         "ip_dst": { "type": "ip", "doc_values" : true },
-         "ip_src": { "type": "ip", "doc_values" : true },
-         "geoip"  : {
-           "type" : "object",
-           "dynamic": true,
-           "properties" : {
-             "ip": { "type": "ip", "doc_values" : true },
-             "location" : { "type" : "geo_point", "doc_values" : true },
-             "latitude" : { "type" : "float", "doc_values" : true },
-             "longitude" : { "type" : "float", "doc_values" : true }
-           }
-         }
-       }
+        }
     }
   }
 }
