@@ -1,2 +1,2 @@
 patterns.d/site*.conf
-GeoLiteCity.dat
+GeoLiteCity.dat*
