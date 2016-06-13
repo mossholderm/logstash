@@ -1,0 +1,23 @@
+filter {
+	ruby {
+		code => 'matched = 0
+			 Dir.chdir("/etc/logstash/debug.d/ignore.d.server")
+			 Dir.foreach(".") do |file|
+				if ( file != "." and file != ".." )
+				 	fileH = File.open(file,"r")
+				 	while !fileH.eof? 
+						line = fileH.readline.chomp
+						regex = Regexp.new(line)
+						if ( event["message"] =~ regex ) 
+							(event["tags"] ||= []) << "Ignore"
+							matched = 1
+							break
+						end
+				 	end
+					break if matched != 0
+			 		fileH.close
+				end
+			 end'
+			 
+	}
+}
