@@ -1,0 +1,24 @@
+filter { 
+  if [type] == "syslog" or [type] == "cee" and [syslog][identifier] == "lvm" { 
+    grok { 
+      patterns_dir => [ "/etc/logstash/patterns.d/" ] 
+      tag_on_failure => [ "Unknown Message" ] 
+      add_tag => [ "Known Message", "Benign" ] 
+      match => { "message" => [ 
+        "^Logical volume %{WORD} successfully resized\.$",
+        "^Monitoring thin %{WORD}\.$",
+        "^Size of logical volume %{WORD}/%{WORD} changed from %{MEM} \(%{INT} extents\) to %{MEM} \(%{INT} extents\)\.$"
+      ] } 
+    } 
+    grok { 
+      patterns_dir => [ "/etc/logstash/patterns.d/" ] 
+      tag_on_failure => [ ] 
+      add_tag => [ "Error" ] 
+      match => { "message" => [ 
+        "^Insufficient free space: %{INT} extents needed, but only %{INT} available$",
+        "^Failed to extend thin %{WORD}\.$",
+        "^No longer monitoring thin %{WORD}\.$"
+      ] } 
+    } 
+  }
+}
