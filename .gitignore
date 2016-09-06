@@ -1,2 +1,3 @@
 patterns.d/site*.conf
 GeoLiteCity.dat*
+conf.d/801-mark-site-pages.conf
