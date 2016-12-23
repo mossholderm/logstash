@@ -183,10 +183,13 @@
               "identifier":                { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true }, 
               "pid":                       { "type" : "integer",                                  "doc_values" : true }, 
               "pri":                       { "type" : "integer",                                  "doc_values" : true },
+              "facility":                  { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true } 
+              "severity":                  { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true }  
               "code": {
                 "type": "object",
                 "properties": {
-                  "facility":              { "type" : "string",     "index" : "not_analyzed",     "doc_values" : true } 
+                  "facility":              { "type" : "integer",    "index" : "not_analyzed",     "doc_values" : true } 
+                  "severity":              { "type" : "integer",    "index" : "not_analyzed",     "doc_values" : true }  
                 }
               }
             }
