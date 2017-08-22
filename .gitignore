@@ -1,3 +1,9 @@
 patterns.d/site*.conf
 GeoLiteCity.dat*
 conf.d/801-mark-site-pages.conf
+jvm.options
+*.orig
+log4j2.properties
+logstash.yml
+startup.options
+backup
