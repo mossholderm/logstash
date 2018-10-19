@@ -1,0 +1,65 @@
+filter {
+  if [type] == "syslog" or [type] == "cee" and [syslog][identifier] == "/usr/libexec/ipa/ipa-ods-exporter" {
+    mutate {
+      add_field => { "application" => "IPA" }
+    }
+    grok {
+      patterns_dir => [ "/etc/logstash/patterns.d/" ]
+      add_tag => [ "Known Message", "Benign" ]
+      tag_on_failure => [ ]
+      match => { "message" => [
+        "^(Connected|Connecting to LDAP|accepting new connection|Done|Got TGT)$",
+        "^Command \"update\" is not supported by IPA; HSM synchronization was finished and the command will be ignored.$",
+        "^Kerberos principal: ipa-ods-exporter/ipa01.mossholder.com$",
+        "^Zone \"%{DATA}\" metadata will be updated in LDAP\.$",
+        "^Zone \"%{NOTSPACE:[bind][zone]}\" metadata will be removed from LDAP\.$",
+        "^accepted new connection <socket object, fd=%{INT}, family=%{INT}, type=%{INT}, protocol=%{INT}>$",
+        "^cleaning up key metadata from zone \"%{NOTSPACE:[bind][zone]}\"$",
+        "^deleted key metadata in LDAP: set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^deleting key metadata \"%{DATA}\"$",
+        "^enabled replica key ids: set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^key KSK-%{INT}Z-%{BASE16NUM} metadata: \{\'idnsSecKeyRef\': u\'pkcs11:object=%{BASE16NUM}\', \'idnsSecKeySEP\': \'TRUE\', '\idnsSecAlgorithm\': \'RSASHA256\', \'idnsSecKeyZONE\': \'TRUE\', \'idnsSecKeyPublish\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\), 'idnsSecKeyCreated': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\), \'idnsSecKeyActivate\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\)\}$",
+        "^key ZSK-%{INT}Z-%{BASE16NUM} metadata: \{\'idnsSecKeyRef\': u\'pkcs11:object=%{BASE16NUM}\', \'idnsSecAlgorithm\': \'RSASHA256\', \'idnsSecKeyZONE\': \'TRUE\', \'idnsSecKeyPublish\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\), \'idnsSecKeyCreated\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\), \'idnsSecKeyActivate\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\)}$",
+        "^key ZSK-%{INT}Z-%{BASE16NUM} metadata: \{\'idnsSecKeyRef\': u\'pkcs11:object=%{BASE16NUM}\', \'idnsSecKeyInactive\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\), \'idnsSecAlgorithm\': \'RSASHA256\', \'idnsSecKeyZONE\': \'TRUE\', \'idnsSecKeyCreated\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\), \'idnsSecKeyDelete\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\), \'idnsSecKeyActivate\': datetime\.datetime\(%{INT}, %{INT}, %{INT}, %{INT}, %{INT}, %{INT}, tzinfo=tzfile\(\'/usr/share/zoneinfo/UTC\'\)\)\}$",
+        "^key metadata in LDAP & ODS: set\(\[u\'[KZ]SK-%{INT}Z-%{BASE16NUM}\'(, u\'[KZ]SK-%{INT}Z-%{BASE16NUM}\')*\]\)$",
+        "^keys in local HSM & LDAP: set\(\[\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*\]\)$",
+        "^master key %{BASE16NUM} is not wrapped with replica keys set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^master keys in ((local|LDAP) HSM|LDAP after flush): set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^new (master|zone) keys in local HSM: set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^new key metadata from ODS: set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^new replica keys in LDAP: set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^obsolete replica keys in local HSM: set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^processing master key data: %{BASE16NUM}$",
+        "^received command \"ldap-cleanup %{NOTSPACE:[bind][zone]}\" from systemd socket$",
+        "^received command \"update %{DATA}\" from systemd socket$",
+        "^received command \"update\" from systemd socket$",
+        "^replica pub keys in (LDAP|SoftHSM): set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^synchronizing master key metadata: %{BASE16NUM}$",
+        "^synchronizing zone \"%{DATA}\"$",
+        "^updating key metadata \"cn=[KZ]SK-%{INT}Z-%{BASE16NUM},%{DATA}\" in LDAP$",
+        "^zone keys deleted from local HSM but present in LDAP: set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$",
+        "^zone keys in (LDAP|local HSM): set\(\[(\'%{BASE16NUM}\'(, \'%{BASE16NUM}\')*)?\]\)$"
+      ] }
+    }
+#    if "Known Message" not in [tags] and "Benign" not in [tags] {
+#      grok {
+#        patterns_dir => [ "/etc/logstash/patterns.d/" ]
+#        tag_on_failure => [ ]
+#        add_tag => [ "Known Message","Error" ]
+#        match => { "message" => [
+#          "^$"
+#        ] }
+#      }
+#    }
+#    if "Benign" not in [tags] and "Known Message" not in [tags] {
+#      grok {
+#        patterns_dir => [ "/etc/logstash/patterns.d/" ]
+#        tag_on_failure => [ ]
+#        add_tag => [ "Alert", "Known Message"]
+#        match => { "message" => [
+#          "^$"
+#        ] }
+#      }
+#    }
+  }
+}
